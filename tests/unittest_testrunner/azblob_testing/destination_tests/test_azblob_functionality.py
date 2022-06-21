@@ -5,21 +5,18 @@ import sys
 import time
 import types
 import unittest
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 # third-party imports
-import coverage
 from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 
 # azure imports (also a third-party import) ;)
 from azure.storage.blob import BlobClient, BlobProperties, ContainerClient
 from azure.storage.blob._shared.response_handlers import PartialBatchErrorException
 
-from tests.unittests.azblob_testing import PART_NAMES, SAMPLE_TARGETS, do_set_osenvs
-
 # local project imports
+from tests.unittest_testrunner.azblob_testing import PART_NAMES, SAMPLE_TARGETS, do_set_osenvs
 from twindb_backup import LOG
 
 DO_TEST_SKIPPING = False
@@ -29,23 +26,6 @@ def get_root(path: Path, dir_name: str):
     if path.name and path.name == dir_name:
         return path
     return get_root(path.parent, dir_name)
-
-
-def handle_coverage():
-    root = get_root(Path(__file__).parent, "backup")
-
-    @contextmanager
-    def cover_ctx():
-        cov = coverage.Coverage(data_file=str(root.joinpath("cov/.coverage")))
-        cov.start()
-        try:
-            yield
-        finally:
-            cov.stop()
-            cov.save()
-            cov.html_report()
-
-    return cover_ctx
 
 
 test_function_logger = LOG
@@ -95,7 +75,7 @@ class AzureBlobBaseCase(unittest.TestCase):
         except ImportError as ie:
             pass
         if "PRIMARY_TEST_CONN_STR" not in os.environ:
-            from tests.unittests.excluded_env_config.build_out_dummy_env import set_osenvs
+            from tests.unittest_testrunner.excluded_env_config.build_out_dummy_env import set_osenvs
 
             logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
             do_set_osenvs(set_osenvs)
@@ -520,7 +500,7 @@ class TC_000_ImportsTestCase(unittest.TestCase):
         from twindb_backup.destination.azblob import AzureBlob
 
     def test_01_correct_os_environs(self):
-        from tests.unittests.excluded_env_config.build_out_dummy_env import set_osenvs
+        from tests.unittest_testrunner.excluded_env_config.build_out_dummy_env import set_osenvs
 
         do_set_osenvs(set_osenvs)
 
@@ -1174,14 +1154,6 @@ class TC_007_StreamTestCase(AzureBlobBaseCase):
             bytes_recieved=bytes_recieved,
         ):
             self.assertEqual(expected_total_bytes, bytes_recieved)
-
-
-def main():
-    cover_ctx_manager = handle_coverage()
-    with cover_ctx_manager():
-        unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(TC_000_ImportsTestCase))
-    print("done")
-    dbg_break = 0
 
 
 if __name__ == "__main__":

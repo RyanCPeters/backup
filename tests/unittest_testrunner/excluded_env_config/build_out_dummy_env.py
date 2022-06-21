@@ -12,7 +12,7 @@ from azure.storage.blob import BlobClient, BlobProperties, BlobServiceClient, Co
 logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 
-from tests.unittests.excluded_env_config.dummy_content_generation import cave_gen, dino_gen, painting_gen
+from tests.unittest_testrunner.excluded_env_config.dummy_content_generation import cave_gen, dino_gen, painting_gen
 from twindb_backup import LOG
 
 PATH_HERE = Path(__file__).parent
