@@ -1,7 +1,6 @@
 """Azure-blob storage destination configuration"""
 import os
-
-from typing import Optional,AnyStr
+from typing import AnyStr, Optional
 
 
 class AzureBlobConf:
