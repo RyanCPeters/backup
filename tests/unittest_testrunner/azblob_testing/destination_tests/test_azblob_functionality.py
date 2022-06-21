@@ -1056,13 +1056,13 @@ class TC_007_StreamTestCase(AzureBlobBaseCase):
             self.basic_remote_source_path.format(**src_kwargs),
             self.connection_string,
         )
-        sample_content_relative_path = (
-            "backup/sample_resources/remote_example/fred-of-buffalo-lodge/monthly/mysql".split("/")
-        )
         here = Path(__file__).parent.resolve()
-        while here.name and here.name != sample_content_relative_path[0]:
+        while here.name and here.name != "tests":
             here = here.parent
-        sample_path = here.joinpath("/".join(sample_content_relative_path[1:]))
+        if here.name != "tests":
+            raise FileNotFoundError("Unable to locate root folder for project unit testing.")
+        here = here.parent
+        sample_path = here.joinpath("sample_resources/remote_example/fred-of-buffalo-lodge/monthly/mysql")
         expected_total_bytes = 0
         paths = []
         for p in sample_path.iterdir():
