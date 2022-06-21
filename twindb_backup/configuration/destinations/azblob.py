@@ -4,20 +4,20 @@ from typing import AnyStr, Optional
 
 
 class AzureBlobConf:
-
-    def __init__(self,
-                 remote_path:str,
-                 connection_string:str,
-                 can_do_overwrites: str = "False",
-                 cpu_cap: str = "",
-                 max_mem_bytes: str = "",
-                 default_protocol: Optional[AnyStr] = "",
-                 default_host_name: Optional[AnyStr] = "",
-                 default_container_name: Optional[AnyStr] = "",
-                 default_interval: Optional[AnyStr] = "",
-                 default_media_type: Optional[AnyStr] = "",
-                 default_fname_prefix: Optional[AnyStr] = ""
-                 ):
+    def __init__(
+        self,
+        remote_path: str,
+        connection_string: str,
+        can_do_overwrites: str = "False",
+        cpu_cap: str = "",
+        max_mem_bytes: str = "",
+        default_protocol: Optional[AnyStr] = "",
+        default_host_name: Optional[AnyStr] = "",
+        default_container_name: Optional[AnyStr] = "",
+        default_interval: Optional[AnyStr] = "",
+        default_media_type: Optional[AnyStr] = "",
+        default_fname_prefix: Optional[AnyStr] = "",
+    ):
         """Azure-blob destination configuration.
 
         Azure Blob Storage is optimized for storing massive amounts of unstructured data. Unstructured data is data that
@@ -33,11 +33,11 @@ class AzureBlobConf:
         :param default_container_name: A string-like or list of string-like object.
                                A string-like object is generally a str or bytes object.
         """
-        super(AzureBlobConf,self).__init__()
+        super(AzureBlobConf, self).__init__()
         self._remote_path = remote_path.strip("'")
         self._connection_string = connection_string.strip("'")
-        self._can_do_overwrites = can_do_overwrites.strip("'").lower()=="true"
-        self._cpu_cap = int(cpu_cap.strip("'")) if cpu_cap else max(os.cpu_count()-1,1)
+        self._can_do_overwrites = can_do_overwrites.strip("'").lower() == "true"
+        self._cpu_cap = int(cpu_cap.strip("'")) if cpu_cap else max(os.cpu_count() - 1, 1)
         self._max_mem_bytes = int(max_mem_bytes.strip("'")) if max_mem_bytes else 2**24
         self._default_protocol = default_protocol.strip("'")
         self._default_container_name = default_container_name.strip("'")
@@ -90,19 +90,21 @@ class AzureBlobConf:
     def default_fname_prefix(self):
         return self._default_fname_prefix
 
-
     @property
     def destination_kwargs(self):
-        return {attr:getattr(self,attr) for attr in (
-            "remote_path",
-            "connection_string",
-            "can_do_overwrites",
-            "cpu_cap",
-            "max_mem_bytes",
-            "default_protocol",
-            "default_host_name",
-            "default_container_name",
-            "default_interval",
-            "default_media_type",
-            "default_fname_prefix",
-        )}
+        return {
+            attr: getattr(self, attr)
+            for attr in (
+                "remote_path",
+                "connection_string",
+                "can_do_overwrites",
+                "cpu_cap",
+                "max_mem_bytes",
+                "default_protocol",
+                "default_host_name",
+                "default_container_name",
+                "default_interval",
+                "default_media_type",
+                "default_fname_prefix",
+            )
+        }

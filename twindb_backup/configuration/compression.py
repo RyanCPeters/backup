@@ -15,17 +15,11 @@ class CompressionConfig:
     """
 
     def __init__(self, **kwargs):
-        self._program = kwargs.get(
-            "program", list(COMPRESSION_MODIFIERS.keys())[0]
-        )
+        self._program = kwargs.get("program", list(COMPRESSION_MODIFIERS.keys())[0])
         if self.program not in COMPRESSION_MODIFIERS:
-            raise ConfigurationError(
-                "Unsupported compression tool %s" % self.program
-            )
+            raise ConfigurationError("Unsupported compression tool %s" % self.program)
 
-        self._threads = (
-            int(kwargs.get("threads")) if "threads" in kwargs else None
-        )
+        self._threads = int(kwargs.get("threads")) if "threads" in kwargs else None
 
         self._level = int(kwargs.get("level")) if "level" in kwargs else None
 
@@ -56,9 +50,7 @@ class CompressionConfig:
         :rtype: Modifier
         """
         kwargs = {
-            key: getattr(self, key)
-            for key in COMPRESSION_MODIFIERS[self.program]["kwargs"]
-            if hasattr(self, key)
+            key: getattr(self, key) for key in COMPRESSION_MODIFIERS[self.program]["kwargs"] if hasattr(self, key)
         }
 
         return COMPRESSION_MODIFIERS[self.program]["class"](stream, **kwargs)

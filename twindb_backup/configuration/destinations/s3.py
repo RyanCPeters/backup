@@ -1,5 +1,6 @@
 """Amazon S3 destrination configuration"""
 
+
 class S3Config:
     """Amazon S3 configuration.
 
@@ -29,7 +30,7 @@ class S3Config:
         bucket,
         aws_default_region="us-east-1",
     ):
-        super(S3Config,self).__init__()
+        super(S3Config, self).__init__()
         self._aws_access_key_id = aws_access_key_id
         self._aws_secret_access_key = aws_secret_access_key
         self._bucket = bucket

@@ -34,12 +34,13 @@ DUMMY_OBJ = object()
 
 
 def get_local_cache_location():
-    def recurse(p:Path):
+    def recurse(p: Path):
         if not p.parent.name:
             return p
-        elif p.name=="tests":
+        elif p.name == "tests":
             return p.parent
         return recurse(p.parent)
+
     return recurse(Path(PATH_HERE)).joinpath("sample_resources/remote_example")
 
 
@@ -257,7 +258,11 @@ def set_osenvs(target_file: str = None, be_silent: bool = True, use_multi_proc: 
             vars_dict["os.environ"]["test_destination"]["PRIMARY_TEST_CONN_STR"] = connStr
             return True
         except BaseException as be:
-            LOG.warning("Encountered an exception while trying to validate connection string:\n\t{}: {}".format(type(be), be.args))
+            LOG.warning(
+                "Encountered an exception while trying to validate connection string:\n\t{}: {}".format(
+                    type(be), be.args
+                )
+            )
             return False
 
     if target_file is None:
@@ -275,7 +280,9 @@ def set_osenvs(target_file: str = None, be_silent: bool = True, use_multi_proc: 
         LOG.warning(
             "\nWARNING:\n\tNo connection stored on local machine\n\tfor a guide on how to get your connection string see:\n\t\thttps://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python?tabs=environment-variable-windows#copy-your-credentials-from-the-azure-portal"
         )
-        conn_str = input("\nWARNING:\n\tNo connection stored on local machine\n\tfor a guide on how to get your connection string see:\n\t\thttps://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python?tabs=environment-variable-windows#copy-your-credentials-from-the-azure-portal\n\nPlease enter a valid connection string for the target account\n::")
+        conn_str = input(
+            "\nWARNING:\n\tNo connection stored on local machine\n\tfor a guide on how to get your connection string see:\n\t\thttps://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python?tabs=environment-variable-windows#copy-your-credentials-from-the-azure-portal\n\nPlease enter a valid connection string for the target account\n::"
+        )
 
         while not validate_conn_str(conn_str):
             conn_str = input(

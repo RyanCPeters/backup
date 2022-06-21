@@ -65,10 +65,7 @@ class TwinDBBackupConfig:
         """
         kwargs = {}
         try:
-            kwargs = {
-                i: self.__cfg.getboolean("intervals", "run_%s" % i)
-                for i in INTERVALS
-            }
+            kwargs = {i: self.__cfg.getboolean("intervals", "run_%s" % i) for i in INTERVALS}
 
         except (NoOptionError, NoSectionError) as err:
             LOG.debug(err)
@@ -84,9 +81,7 @@ class TwinDBBackupConfig:
         """
         if self.__mysql is None:
             try:
-                self.__mysql = MySQLConfig(
-                    **self.__read_options_from_section(SQ.mysql)
-                )
+                self.__mysql = MySQLConfig(**self.__read_options_from_section(SQ.mysql))
 
             except NoSectionError:
                 return None
@@ -161,9 +156,7 @@ class TwinDBBackupConfig:
                     api_key = self.__cfg.get("export", "api_key")
                     return DataDogExporter(app_key, api_key)
                 else:
-                    raise ConfigurationError(
-                        "Metric exported '%s' is not implemented" % transport
-                    )
+                    raise ConfigurationError("Metric exported '%s' is not implemented" % transport)
             except NoOptionError as err:
                 raise ConfigurationError(err) from err
 
@@ -177,9 +170,7 @@ class TwinDBBackupConfig:
         :rtype: CompressionConfig
         """
         try:
-            return CompressionConfig(
-                **self.__read_options_from_section("compression")
-            )
+            return CompressionConfig(**self.__read_options_from_section("compression"))
 
         except NoSectionError:
             return CompressionConfig()
@@ -217,7 +208,7 @@ class TwinDBBackupConfig:
             raise ConfigurationError(err) from err
 
     def destination(self, backup_source=socket.gethostname()):
-        """ This is where backup destinations are instantiated.
+        """This is where backup destinations are instantiated.
         This instantiation depends upon having a proper twindb-backup.cfg file
         that defines the desired destination's corresponding section of the config file.
 
@@ -227,9 +218,7 @@ class TwinDBBackupConfig:
         :rtype: BaseDestination
         """
         try:
-            backup_destination = self.__cfg.get(
-                "destination", "backup_destination"
-            )
+            backup_destination = self.__cfg.get("destination", "backup_destination")
             if backup_destination == "ssh":
                 return Ssh(
                     self.ssh.path,
@@ -257,14 +246,9 @@ class TwinDBBackupConfig:
             elif backup_destination == SDT.azure:
                 return AzureBlob(**self.azure.destination_kwargs)
             else:
-                raise ConfigurationError(
-                    "Unsupported destination '%s'" % backup_destination
-                )
+                raise ConfigurationError("Unsupported destination '%s'" % backup_destination)
         except NoSectionError as err:
-            raise ConfigurationError(
-                "%s is missing required section 'destination'"
-                % self._config_file
-            ) from err
+            raise ConfigurationError("%s is missing required section 'destination'" % self._config_file) from err
 
     def _retention(self, section):
         kwargs = {}
@@ -273,16 +257,11 @@ class TwinDBBackupConfig:
             try:
                 kwargs[i] = self.__cfg.getint(section, option)
             except (NoOptionError, NoSectionError):
-                LOG.warning(
-                    "Option %s is not defined in section %s", option, section
-                )
+                LOG.warning("Option %s is not defined in section %s", option, section)
         return RetentionPolicy(**kwargs)
 
     def __read_options_from_section(self, section):
-        return {
-            opt: self.__cfg.get(section, opt).strip("\"'")
-            for opt in self.__cfg.options(section)
-        }
+        return {opt: self.__cfg.get(section, opt).strip("\"'") for opt in self.__cfg.options(section)}
 
     def __repr__(self):
         return "%s: %s" % (self.__class__.__name__, self._config_file)
