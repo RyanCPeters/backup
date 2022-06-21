@@ -6,21 +6,23 @@ import socket
 from configparser import ConfigParser, NoOptionError, NoSectionError
 from shlex import split
 
-from twindb_backup import INTERVALS, LOG
-from twindb_backup.configuration.compression import CompressionConfig
-from twindb_backup.configuration.destinations.gcs import GCSConfig
+from twindb_backup import LOG, INTERVALS
 from twindb_backup.configuration.destinations.s3 import S3Config
+from twindb_backup.configuration.destinations.gcs import GCSConfig
 from twindb_backup.configuration.destinations.ssh import SSHConfig
+from twindb_backup.configuration.destinations.azblob import AzureBlobConf
 from twindb_backup.configuration.exceptions import ConfigurationError
 from twindb_backup.configuration.gpg import GPGConfig
 from twindb_backup.configuration.mysql import MySQLConfig
 from twindb_backup.configuration.retention import RetentionPolicy
+from twindb_backup.configuration.compression import CompressionConfig
 from twindb_backup.configuration.run_intervals import RunIntervals
-from twindb_backup.destination.gcs import GCS
 from twindb_backup.destination.s3 import S3
+from twindb_backup.destination.gcs import GCS
 from twindb_backup.destination.ssh import Ssh
+from twindb_backup.destination.azblob import AzureBlob
 from twindb_backup.exporter.datadog_exporter import DataDogExporter
-from twindb_backup.exporter.statsd_exporter import StatsdExporter
+from twindb_backup import SUPPORTED_DESTINATION_TYPES as SDT, SUPPORTED_QUERY_LANGUAGES as SQ
 
 DEFAULT_CONFIG_FILE_PATH = "/etc/twindb/twindb-backup.cfg"
 
@@ -62,7 +64,10 @@ class TwinDBBackupConfig:
         """
         kwargs = {}
         try:
-            kwargs = {i: self.__cfg.getboolean("intervals", f"run_{i}") for i in INTERVALS}
+            kwargs = {
+                i: self.__cfg.getboolean("intervals", "run_%s" % i)
+                for i in INTERVALS
+            }
 
         except (NoOptionError, NoSectionError) as err:
             LOG.debug(err)
@@ -78,7 +83,9 @@ class TwinDBBackupConfig:
         """
         if self.__mysql is None:
             try:
-                self.__mysql = MySQLConfig(**self.__read_options_from_section("mysql"))
+                self.__mysql = MySQLConfig(
+                    **self.__read_options_from_section(SQ.mysql)
+                )
 
             except NoSectionError:
                 return None
@@ -92,7 +99,7 @@ class TwinDBBackupConfig:
         :rtype: SSHConfig
         """
         try:
-            return SSHConfig(**self.__read_options_from_section("ssh"))
+            return SSHConfig(**self.__read_options_from_section(SDT.ssh))
 
         except NoSectionError:
             return None
@@ -101,7 +108,7 @@ class TwinDBBackupConfig:
     def s3(self):  # pylint: disable=invalid-name
         """Amazon S3 configuration"""
         try:
-            return S3Config(**self.__read_options_from_section("s3"))
+            return S3Config(**self.__read_options_from_section(SDT.s3))
 
         except NoSectionError:
             return None
@@ -110,8 +117,19 @@ class TwinDBBackupConfig:
     def gcs(self):  # pylint: disable=invalid-name
         """Google Cloud Storage configuration"""
         try:
-            return GCSConfig(**self.__read_options_from_section("gcs"))
+            return GCSConfig(**self.__read_options_from_section(SDT.gcs))
 
+        except NoSectionError:
+            return None
+
+    @property
+    def azure(self):
+        """
+        Azure-storage-blob configuration
+        :return: An instance of AzureBlobConf class
+        """
+        try:
+            return AzureBlobConf(**self.__read_options_from_section(SDT.azure))
         except NoSectionError:
             return None
 
@@ -141,12 +159,10 @@ class TwinDBBackupConfig:
                     app_key = self.__cfg.get("export", "app_key")
                     api_key = self.__cfg.get("export", "api_key")
                     return DataDogExporter(app_key, api_key)
-                if transport == "statsd":
-                    statsd_host = self.__cfg.get("export", "statsd_host")
-                    statsd_port = self.__cfg.get("export", "statsd_port")
-                    return StatsdExporter(statsd_host, statsd_port)
                 else:
-                    raise ConfigurationError(f"Metric exported '{transport}' is not implemented")
+                    raise ConfigurationError(
+                        "Metric exported '%s' is not implemented" % transport
+                    )
             except NoOptionError as err:
                 raise ConfigurationError(err) from err
 
@@ -160,14 +176,16 @@ class TwinDBBackupConfig:
         :rtype: CompressionConfig
         """
         try:
-            return CompressionConfig(**self.__read_options_from_section("compression"))
+            return CompressionConfig(
+                **self.__read_options_from_section("compression")
+            )
 
         except NoSectionError:
             return CompressionConfig()
 
     @property
     def gpg(self):
-        """GPG configuration."""
+        """GPG (GNU Privacy Guard) configuration. (An encryption tool)"""
         try:
             return GPGConfig(**self.__read_options_from_section("gpg"))
 
@@ -198,14 +216,19 @@ class TwinDBBackupConfig:
             raise ConfigurationError(err) from err
 
     def destination(self, backup_source=socket.gethostname()):
-        """
+        """ This is where backup destinations are instantiated.
+        This instantiation depends upon having a proper twindb-backup.cfg file
+        that defines the desired destination's corresponding section of the config file.
+
         :param backup_source: Hostname of the host where backup is taken from.
         :type backup_source: str
         :return: Backup destination instance
         :rtype: BaseDestination
         """
         try:
-            backup_destination = self.__cfg.get("destination", "backup_destination")
+            backup_destination = self.__cfg.get(
+                "destination", "backup_destination"
+            )
             if backup_destination == "ssh":
                 return Ssh(
                     self.ssh.path,
@@ -230,24 +253,35 @@ class TwinDBBackupConfig:
                     gc_encryption_key=self.gcs.gc_encryption_key,
                     hostname=backup_source,
                 )
-
+            elif backup_destination == SDT.azure:
+                return AzureBlob(**self.azure.destination_kwargs)
             else:
-                raise ConfigurationError(f"Unsupported destination '{backup_destination}'")
+                raise ConfigurationError(
+                    "Unsupported destination '%s'" % backup_destination
+                )
         except NoSectionError as err:
-            raise ConfigurationError(f"{self._config_file} is missing required section 'destination'") from err
+            raise ConfigurationError(
+                "%s is missing required section 'destination'"
+                % self._config_file
+            ) from err
 
     def _retention(self, section):
         kwargs = {}
         for i in INTERVALS:
-            option = f"{i}_copies"
+            option = "%s_copies" % i
             try:
                 kwargs[i] = self.__cfg.getint(section, option)
             except (NoOptionError, NoSectionError):
-                LOG.warning("Option %s is not defined in section %s", option, section)
+                LOG.warning(
+                    "Option %s is not defined in section %s", option, section
+                )
         return RetentionPolicy(**kwargs)
 
     def __read_options_from_section(self, section):
-        return {opt: self.__cfg.get(section, opt).strip("\"'") for opt in self.__cfg.options(section)}
+        return {
+            opt: self.__cfg.get(section, opt).strip("\"'")
+            for opt in self.__cfg.options(section)
+        }
 
     def __repr__(self):
-        return f"{self.__class__.__name__}: {self._config_file}"
+        return "%s: %s" % (self.__class__.__name__, self._config_file)

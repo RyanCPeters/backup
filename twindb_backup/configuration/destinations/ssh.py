@@ -1,6 +1,5 @@
 """SSH destination configuration"""
 
-
 class SSHConfig:
     """SSH destination configuration."""
 
@@ -12,6 +11,7 @@ class SSHConfig:
         port=22,
         ssh_key="/root/.ssh/id_rsa",
     ):
+        super(SSHConfig,self).__init__()
 
         self._host = backup_host
         self._path = backup_dir

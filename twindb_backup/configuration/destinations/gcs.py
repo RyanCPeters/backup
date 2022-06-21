@@ -7,9 +7,9 @@ class GCSConfig:
     __attr__ = ["gc_credentials_file", "gc_encryption_key", "bucket"]
 
     def __init__(self, **kwargs):
-
+        super(GCSConfig,self).__init__()
         for opt in self.__attr__:
-            setattr(self, f"_{opt}", kwargs.get(opt))
+            setattr(self, "_%s" % opt, kwargs.get(opt))
 
     @property
     def gc_credentials_file(self):
