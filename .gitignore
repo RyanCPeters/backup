@@ -45,7 +45,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
-**/unittests/excluded_env_config/dummy_env_vars.json
+**/dummy_env_vars.json
 sample_resources/
 
 # Translations
